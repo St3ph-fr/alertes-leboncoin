@@ -53,7 +53,7 @@ function lbc(){
       compteur++;
       
     }
-      corps = corps + "<p> Recherche - <a href=\""+ sheet.getRange(2+i,2).getValue() + "\"> "+ sheet.getRange(2+i,1).getValue()+ "</a><ul>" + body + "</ul></p>";
+      corps = corps + "<p style='display:block;clear:both;padding-top:20px;font-size:14px;'> Votre recherche : <a href=\""+ sheet.getRange(2+i,2).getValue() + "\"> "+ sheet.getRange(2+i,1).getValue()+ "</a><ul>" + body + "</ul></p>";
       slog.insertRowBefore(2);
       slog.getRange("A2").setValue(sheet.getRange(2+i,1).getValue());
       slog.getRange("B2").setValue(compteur-1);
