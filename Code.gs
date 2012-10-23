@@ -4,7 +4,7 @@ function lbc(){
   var slog = ss.getSheetByName("Log");
   var i =0; var body = ""; var corps = "";
   var stop = false;
-  while(sheet.getRange(2+i,2).getValue() !== ""){
+  while(sheet.getRange(2+i,2).getValue() != ""){
     var compteur = 0;
     body = "";
     stop = false;
@@ -14,10 +14,10 @@ function lbc(){
     data = data.substring(data.indexOf("<a"));
     var firsta = data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
     var holda = sheet.getRange(2+i,3).getValue();
-    if(extractid(firsta) !== holda && holda !== ""){
-    while(data.indexOf("<a") > 0 || stop === false){
+    if(extractid(firsta) != holda && holda != ""){
+    while(data.indexOf("<a") > 0 || stop == false){
       var a = data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
-      if(extractid(a) !== holda){
+      if(extractid(a) != holda){
         
         var title = data.substring(data.indexOf("title=") + 7 , data.indexOf("\"", data.indexOf("title=") + 7) );
         var place = data.substring(data.indexOf("placement") + 11 , data.indexOf("</div>", data.indexOf("placement") + 11) );
@@ -64,20 +64,20 @@ function lbc(){
     
     i++;
   }
-  if(corps !== ""){
+  if(corps != ""){
     MailApp.sendEmail(ScriptProperties.getProperty('email'),"Alerte Lbc",corps,{ htmlBody: corps });
   }
 }
 
 function setup(){
-  if(ScriptProperties.getProperty('email') === "" || ScriptProperties.getProperty('email') === null ){
+  if(ScriptProperties.getProperty('email') == "" || ScriptProperties.getProperty('email') == null ){
     Browser.msgBox("L'email du destintaire n'est pas définit. Allez dans le menu \"Lbc Alertes\" puis \"Gérer email\".");
   }
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var i = 0;
   var sheet = ss.getSheetByName("Données");
-  while(sheet.getRange(2+i,2).getValue() !== ""){
-    if(sheet.getRange(2+i,3).getValue() === ""){
+  while(sheet.getRange(2+i,2).getValue() != ""){
+    if(sheet.getRange(2+i,3).getValue() == ""){
       var rep = UrlFetchApp.fetch(sheet.getRange(2+i,2).getValue()).getContentText();
       if(rep.indexOf("Aucune annonce") < 0){
       var data = splitresult(rep);
@@ -91,7 +91,7 @@ function setup(){
 }
 
 function setupmail(){
-  if(ScriptProperties.getProperty('email') === "" || ScriptProperties.getProperty('email') === null ){
+  if(ScriptProperties.getProperty('email') == "" || ScriptProperties.getProperty('email') == null ){
     var quest = Browser.inputBox("Entrez votre email, le programme ne vérifie pas le contenu de cette boite.", Browser.Buttons.OK_CANCEL);
     if(quest == "cancel"){
       Browser.msgBox("Ajout email annulé.");
