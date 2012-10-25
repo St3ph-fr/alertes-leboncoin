@@ -105,7 +105,7 @@ function runScript() {
          
           // Ajoute le prix
           if(price != null) {
-            mail += '<div style="line-height:32px;font-size:14px;font-weight:bold;">' + price + "€" + '</div>';        
+            mail += '<div style="line-height:32px;font-size:14px;font-weight:bold;">' + price + " €" + '</div>';        
           }
 
           // fermeture du li
