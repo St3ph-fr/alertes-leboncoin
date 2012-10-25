@@ -1,138 +1,145 @@
-function lbc(){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Données");
-  var slog = ss.getSheetByName("Log");
-  var i =0; var body = ""; var corps = "";
-  var stop = false;
-  while(sheet.getRange(2+i,2).getValue() != ""){
-    var compteur = 0;
-    body = "";
-    stop = false;
-    var rep = UrlFetchApp.fetch(sheet.getRange(2+i,2).getValue()).getContentText();
-    if(rep.indexOf("Aucune annonce") < 0){
-    var data = splitresult(rep);
-    data = data.substring(data.indexOf("<a"));
-    var firsta = data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
-    var holda = sheet.getRange(2+i,3).getValue();
-    if(extractid(firsta) != holda && holda != ""){
-    while(data.indexOf("<a") > 0 || stop == false){
-      var a = data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
-      if(extractid(a) != holda){
-        
-        var title = data.substring(data.indexOf("title=") + 7 , data.indexOf("\"", data.indexOf("title=") + 7) );
-        var place = data.substring(data.indexOf("placement") + 11 , data.indexOf("</div>", data.indexOf("placement") + 11) );
-        
-        // test à optimiser car c'est hyper bourrin [mlb]
-        var isPrice = String(data.substring(data.indexOf("price"), data.indexOf("price")+250)).match(/price/gi);
-        if (isPrice) {
-          var price = data.substring(data.indexOf("price") + 7 , data.indexOf("</div>", data.indexOf("price") + 7) );
-        } else {
-          var price = ""; 
-        }
-        
-        var date = data.substring(data.indexOf("date") + 6 , data.indexOf("class=\"image\"", data.indexOf("date") + 6) - 5);
-        
-        // test à optimiser car c'est hyper bourrin [mlb]
-        var isImage = String(data.substring(data.indexOf("image"), data.indexOf("image")+250)).match(/img/gi);
-        if (isImage) {
-          var image = data.substring(data.indexOf("class=\"image-and-nb\">") + 21, data.indexOf("class=\"nb\"", data.indexOf("class=\"image-and-nb\">") + 21) - 12);
-        } else {
-          var image = "";
-        }
-        
-        body = body + "<li style='list-style:none;margin-bottom:20px; clear:both;background:#EAEBF0;border-top:1px solid #ccc;'><div style='float:left;width:90px;padding: 20px 20px 0 0;text-align: right;'>"+ date +"</div><div style='float:left;width:200px;padding:20px 0;'><a href=\"" + a + "\" '>"+ image +"</a> </div><div style='float:left;width:420px;padding:20px 0;'><a href=\"" + a + "\" style='font-size: 14px;font-weight:bold;color:#369;text-decoration:none;'>" + title + "</a> <div>" + place + "</div> <div style='line-height:32px;font-size:14px;font-weight:bold;'>" + price + "</div></div></li>";
-        
-        if(data.indexOf("<a",10) > 0){
-          var data = data.substring(data.indexOf("<a",10));
-        }else{
-          stop  = true;
-        }
-      }else{
-        stop = true;
-      }
-      compteur++;
-      
-    }
-      corps = corps + "<p style='display:block;clear:both;padding-top:20px;font-size:14px;'> Votre recherche : <a href=\""+ sheet.getRange(2+i,2).getValue() + "\"> "+ sheet.getRange(2+i,1).getValue()+ "</a><ul>" + body + "</ul></p>";
-      slog.insertRowBefore(2);
-      slog.getRange("A2").setValue(sheet.getRange(2+i,1).getValue());
-      slog.getRange("B2").setValue(compteur-1);
-      slog.getRange("C2").setValue(new Date);
-      sheet.getRange(2+i,3).setValue(extractid(firsta));
-    }
-  }
+var COLUMN_LABEL = 1;
+var COLUMN_URL = 2;
+var COLUMN_LAST_ID = 3;
+
+var CELL_EMAIL = "B5";
+
+var ROW_ANNONCE = 8;
+
+function runScript() {
+
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+  var dataSheet = spreadSheet.getSheetByName("Alertes");
+  
+  var rowIndex = ROW_ANNONCE;
+  var url;
+  
+  // Boucle sur les URL de recherche
+  while((url = dataSheet.getRange(rowIndex,COLUMN_URL).getValue()) != "") {
+    var label = dataSheet.getRange(rowIndex,COLUMN_LABEL).getValue();
+    var lastId = dataSheet.getRange(rowIndex,COLUMN_LAST_ID).getValue();
     
-    i++;
-  }
-  if(corps != ""){
-    MailApp.sendEmail(ScriptProperties.getProperty('email'),"Alerte Lbc",corps,{ htmlBody: corps });
-  }
-}
+    // Code HTML de la réponse
+    var options = {"contentType" : "text/xml; charset=iso-8859-1"};
+    var rep = UrlFetchApp.fetch(url, options).getContentText("ISO-8859-1");
+    
+    // Vérifie s'il y a des annonces
+    if(rep.indexOf("Aucune annonce") < 0) {
+      // Supprime tous les retours chariot
+      var cleanRegexp = new RegExp("\\n", "g");
+      rep = rep.replace(cleanRegexp, " ");
 
-function setup(){
-  if(ScriptProperties.getProperty('email') == "" || ScriptProperties.getProperty('email') == null ){
-    Browser.msgBox("L'email du destintaire n'est pas définit. Allez dans le menu \"Lbc Alertes\" puis \"Gérer email\".");
-  }
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var i = 0;
-  var sheet = ss.getSheetByName("Données");
-  while(sheet.getRange(2+i,2).getValue() != ""){
-    if(sheet.getRange(2+i,3).getValue() == ""){
-      var rep = UrlFetchApp.fetch(sheet.getRange(2+i,2).getValue()).getContentText();
-      if(rep.indexOf("Aucune annonce") < 0){
-      var data = splitresult(rep);
-      sheet.getRange(2+i,3).setValue(extractid(data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4)));
-      }else{
-        sheet.getRange(2+i,3).setValue(123);
+      // Extrait la partie concernant les annonces
+      var infos = extractInfo('list-ads(.*?)list-gallery', rep);
+
+      // Extrait les annonces une à une
+      var regexpAnnonce = new RegExp('<a href="(.*?)" title="(.*?)">(.*?)<\/a>', 'gi');
+      var annonce = "";
+      
+      // ID de l'annonce en cours
+      var idAnnonce = lastId;
+
+      // Corps du message
+      var mail = "";
+    
+      // Compteur d'annonces
+      var compteur = 0;
+    
+      // Boucle sur chaque annonce
+      while ((annonce = regexpAnnonce.exec(infos)) != null) {
+         // Url de l'annonce 
+         var href = annonce[1];
+         
+         // Id de l'annonce
+         idAnnonce = extractInfo('\/(\\d*)\.htm', href);
+         
+         // Vérifie que l'annonce n'a pas déjà été envoyée
+         if(idAnnonce == lastId) {
+           break;
+         }
+         
+         // Sauve l'ID de l'annonce la plus récente
+         if(compteur == 0) {
+           dataSheet.getRange(rowIndex,COLUMN_LAST_ID).setValue(idAnnonce);
+         }
+
+          // Titre
+          var title = annonce[2];
+          
+          // Contenu entre les balises <a>...</a>
+          var content = annonce[3];
+          
+          // Extrait la date
+          var date = "";
+          var regexpDate = new RegExp('<div class="date">\\s*<div>(.+?)<\/div>\\s*<div>(.+?)<\/div>\\s*<\/div>', 'gi');
+          var found = regexpDate.exec(content);
+          if(found) {
+            date = found[1] + '<br>' + found[2];
+          }
+          
+          // Extrait le lieu
+          var placement = extractInfo('"placement">(.*?)<\/div>', content);
+          
+          // Extrait le prix
+          var price = extractInfo('"price">(.*?)\&', content);
+          
+          // Extrait l'image
+          var image = extractInfo('img src="(.*?)"', content);
+          
+          // ouverture du li
+          mail += '<li style="list-style:none;margin-bottom:20px;clear:both;background:#EAEBF0;border-top:1px solid #ccc;">';
+
+          // Construction du message
+          mail += '<div style="float:left;width:90px;padding: 20px 20px 0 0;text-align: right;">' + date + '</div>';
+          
+          // Ajoute l'image
+          if(image !=null) {
+            mail += '<div style="float:left;width:200px;padding:20px 0;"><a href="' + href + '"><img src="' + image + '"/></a></div>';
+          }
+          
+          // Ajoute le titre
+          mail += '<div style="float:left;width:420px;padding:20px 0;"><a href="' + href + '" style="font-size: 14px;font-weight:bold;color:#369;text-decoration:none;">' + title + '</a>';
+          
+          // Ajoute le lieu
+          mail += '<div>' + placement + '</div>';
+         
+          // Ajoute le prix
+          if(price != null) {
+            mail += '<div style="line-height:32px;font-size:14px;font-weight:bold;">' + price + "€" + '</div>';        
+          }
+
+          // fermeture du li
+          mail += '</li>';
+          
+          compteur++;
+      }    
+      
+      // Envoi du mail s'il y a de nouvelles annonces
+      if(compteur > 0) {
+        mail = '<p><b>Recherche</b> : <a href="'+ url + '"> '+ label + '</a><ul>' + mail + '</ul></p>';
+        var email = dataSheet.getRange(CELL_EMAIL).getValue();
+        MailApp.sendEmail(email, 'Alerte LeBonCoin : ' + label + ' - ' + Utilities.formatDate(new Date(), 'GMT+2', 'dd-MM-yyyy HH:mm'), mail, { htmlBody: mail });
       }
     }
-    i++;
+    
+    rowIndex++;
   }
 }
 
-function setupmail(){
-  if(ScriptProperties.getProperty('email') == "" || ScriptProperties.getProperty('email') == null ){
-    var quest = Browser.inputBox("Entrez votre email, le programme ne vérifie pas le contenu de cette boite.", Browser.Buttons.OK_CANCEL);
-    if(quest == "cancel"){
-      Browser.msgBox("Ajout email annulé.");
-      return false;
-    }else{
-      ScriptProperties.setProperty('email', quest);
-      Browser.msgBox("Email " + ScriptProperties.getProperty('email') + " ajouté");
-    }
-  }else{
-    var quest = Browser.inputBox("Entrez un email pour modifier l'email : " + ScriptProperties.getProperty('email') , Browser.Buttons.OK_CANCEL);
-    if(quest == "cancel"){
-      Browser.msgBox("Modification email annulé.");
-      return false;
-    }else{
-      ScriptProperties.setProperty('email', quest);
-      Browser.msgBox("Email " + ScriptProperties.getProperty('email') + " ajouté");
-    }
-  }
+function extractInfo(regexp, content) {
+   regexp = new RegExp(regexp, 'gi');
+   var found = regexp.exec(content);
+   if(found) {
+     found = found[1];
+   }
+   return found;
 }
-
-function extractid(id){
-  return id.substring(id.indexOf("/",25) + 1,id.indexOf(".htm"));
-}
-function splitresult(text){
-  var debut = text.indexOf("<div class=\"list-ads\">");
-  var fin = text.indexOf("<div class=\"list-gallery\">");
-  return text.substring(debut + "<div class=\"list-ads\">".length,fin);
-}
-
 
 function onOpen() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet();
   var entries = [{
-    name : "Setup recherche",
-    functionName : "setup"
-  },{
     name : "Lancer manuellement",
-    functionName : "lbc"
-  },{
-    name : "Gérer email",
-    functionName : "setupmail"
+    functionName : "runScript"
   }];
   sheet.addMenu("Lbc Alertes", entries);
-}
+};
