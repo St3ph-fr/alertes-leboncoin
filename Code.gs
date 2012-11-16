@@ -130,6 +130,12 @@ functionName : "lbc"
 sheet.addMenu("Lbc Alertes", entries);
 }
 
+function onInstall()
+{
+  onOpen();
+}
+
+
 function myDate(){
 var today = new Date();
 //Browser.msgBox(today.getDate()+"/"+(today.getMonth()+1)+"/"+today.getFullYear());
