@@ -6,7 +6,7 @@ var CELL_EMAIL = "B5";
 
 var ROW_ANNONCE = 8;
 
-function runScript() {
+function alerteLeBonCoin() {
 
   var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
   var dataSheet = spreadSheet.getSheetByName("Alertes");
@@ -139,7 +139,7 @@ function onOpen() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet();
   var entries = [{
     name : "Lancer manuellement",
-    functionName : "runScript"
+    functionName : "alerteLeBonCoin"
   }];
   sheet.addMenu("Lbc Alertes", entries);
 };
