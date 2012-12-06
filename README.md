@@ -14,6 +14,8 @@ Script d'alertes email leboncoin.fr via Google Docs / Drive
 (Dans outils > editeur de scripts, puis Ressources > déclencheur du script actuel).  
 Il est conseillé de régler le trigger sur "toutes les 2 heures".
 
+5. Vous pouvez faire un test en cliquant sur LBC Alertes > Lancer manuellement. (à côté du menu outils)
+
 Créé par Just docs it : http://justdocsit.blogspot.fr  
 Code optimisé par Tom  
 CSS par [mlb](http://www.maximelebreton.com)  
