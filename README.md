@@ -10,7 +10,7 @@ Script d'alertes email leboncoin.fr via Google Docs / Drive
 
 3. Pour chaque requête que vous souhaitez effectuer sur leboncoin.fr, copiez simplement son url dans la colonne "url" (une url par ligne).  
 
-4. Pour que le script soit executé de manière automatique, vous devez programmer un trigger sur la fonction lbc().  
+4. Pour que le script soit executé de manière automatique, vous devez programmer un trigger sur la fonction runScript().  
 (Dans outils > editeur de scripts, puis Ressources > déclencheur du script actuel).  
 Il est conseillé de régler le trigger sur "toutes les 2 heures".
 
