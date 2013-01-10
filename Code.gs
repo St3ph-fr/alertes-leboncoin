@@ -109,9 +109,9 @@ function extractid(id){
 return id.substring(id.indexOf("/",25) + 1,id.indexOf(".htm"));
 }
 function splitresult(text){
-var debut = text.indexOf("<div class=\"list-ads\">");
+var debut = text.indexOf("<div class=\"list-lbc\">");
 var fin = text.indexOf("<div class=\"list-gallery\">");
-return text.substring(debut + "<div class=\"list-ads\">".length,fin);
+return text.substring(debut + "<div class=\"list-lbc\">".length,fin);
 }
 
 
