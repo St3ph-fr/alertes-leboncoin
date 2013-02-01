@@ -61,7 +61,7 @@ function lbc(sendMail){
             corps = corps + "<p>Votre recherche : <a name=\""+ searchName + "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p><ul>" + body + "</ul>";
             corpsHTML = corpsHTML + "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Votre recherche : <a name=\""+ searchName + "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p><ul>" + bodyHTML + "</ul>";
             menu += "<li><a href=\"#"+ searchName + "\">"+ searchName +" (" + nbRes + ")</a></li>"
-            if(ScriptProperties.getProperty('log') == "true"){
+            if(ScriptProperties.getProperty('log') == "true" || ScriptProperties.getProperty('log') == null || ScriptProperties.getProperty('log') == ""){
               slog.insertRowBefore(2);
               slog.getRange("A2").setValue(searchName);
               slog.getRange("B2").setValue(nbRes);
@@ -209,8 +209,8 @@ function dolog(){
     ScriptProperties.setProperty('log', true);
     Browser.msgBox("Les logs ont été activées.");
   }else{
-    ScriptProperties.setProperty('log', true);
-    Browser.msgBox("Le paramétrage précédent n'a pas été trouvé les logs ont été activées.");
+    ScriptProperties.setProperty('log', false);
+    Browser.msgBox("Les logs ont été désactivées.");
   }
 }
 
