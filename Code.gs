@@ -11,6 +11,9 @@ var menuLog = "Activer/Désactiver les logs";
 var menuArchiveLog = "Archiver les logs";
 
 function lbc(sendMail){
+  if(sendMail != false){
+    sendMail = true;
+  }
   var to = ScriptProperties.getProperty('email');
   if(to == "" || to == null ){
     Browser.msgBox("L'email du destinataire n'est pas définit. Allez dans le menu \"" + menuLabel + "\" puis \"" + menuMailSetupLabel + "\".");
