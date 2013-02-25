@@ -3,6 +3,8 @@ Alertes leboncoin v2
 
 Script d'alertes email leboncoin.fr via Google Docs / Drive
 
+**Prérequis :** *vous devez avoir un compte Google et y être connecté.*
+
 ### Installation en 4 étapes
 1. Créer une copie de cette feuille de calcul : https://docs.google.com/spreadsheet/ccc?key=0Atof5tNmg-CYdC1hVTkybGxOYkFhM0Qxd0tIYldneVE&newcopy  
 
