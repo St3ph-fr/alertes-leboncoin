@@ -164,6 +164,7 @@ return data.substring(data.indexOf("placement") + 11 , data.indexOf("</div>", da
 */
 function extractPrice_(data){
 // test à optimiser car c'est hyper bourrin [mlb]
+data = data.substring(0,data.indexOf("clear",10)); //racourcissement de la longueur de data pour ne pas aller chercher le prix du proudit suivant
 var isPrice = String(data.substring(data.indexOf("price"), data.indexOf("price")+250)).match(/price/gi);
 if (isPrice) {
 var price = data.substring(data.indexOf("price") + 7 , data.indexOf("</div>", data.indexOf("price") + 7) );
