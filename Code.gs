@@ -46,10 +46,11 @@ function lbc(sendMail){
                 var title = extractTitle_(data);
                 var place = extractPlace_(data);
                 var price = extractPrice_(data);
+                var vendpro = extractPro_(data);
                 var date = extractDate_(data);
                 var image = extractImage_(data);
                 body = body + "<li><a href=\"" + a + "\">" + title + "</a> (" + price + " euros - " + place + ")</li>";
-                bodyHTML = bodyHTML + "<li style=\"list-style:none;margin-bottom:20px; clear:both;background:#EAEBF0;border-top:1px solid #ccc;\"><div style=\"float:left;width:90px;padding: 20px 20px 0 0;text-align: right;\">"+ date +"<div style=\"float:left;width:200px;padding:20px 0;\"><a href=\"" + a + "\">"+ image +"</a> </div><div style=\"float:left;width:420px;padding:20px 0;\"><a href=\"" + a + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">" + title + "</a> <div>" + place + "</div> <div style=\"line-height:32px;font-size:14px;font-weight:bold;\">" + price + "</div></div></li>";
+                bodyHTML = bodyHTML + "<li style=\"list-style:none;margin-bottom:20px; clear:both;background:#EAEBF0;border-top:1px solid #ccc;\"><div style=\"float:left;width:90px;padding: 20px 20px 0 0;text-align: right;\">"+ date +"<div style=\"float:left;width:200px;padding:20px 0;\"><a href=\"" + a + "\">"+ image +"</a> </div><div style=\"float:left;width:420px;padding:20px 0;\"><a href=\"" + a + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">" + title + vendpro +"</a> <div>" + place + "</div> <div style=\"line-height:32px;font-size:14px;font-weight:bold;\">" + price + "</div></div></li>";
                 if(data.indexOf("<a",10) > 0){
                   var data = data.substring(data.indexOf("<a",10));
                 }else{
@@ -150,6 +151,18 @@ function extractA_(data){
 */
 function extractTitle_(data){
   return data.substring(data.indexOf("title=") + 7 , data.indexOf("\"", data.indexOf("title=") + 7) );
+}
+
+/**
+* Extrait vendeur pro
+*/
+function extractPro_(data){
+   var pro = data.substring(data.indexOf("category") + 9 , data.indexOf("</div>", data.indexOf("category") + 9) );
+  if(pro.indexOf("(pro)") > 0){
+    return " (pro)";
+  }else{
+    return "";
+  }
 }
 
 /**
