@@ -30,7 +30,7 @@ function alerteLeBonCoin() {
       rep = rep.replace(cleanRegexp, " ");
 
       // Extrait la partie concernant les annonces
-      var infos = extractInfo('list-ads(.*?)list-gallery', rep);
+      var infos = extractInfo('list-lbc(.*?)list-gallery', rep);
 
       // Extrait les annonces une à une
       var regexpAnnonce = new RegExp('<a href="(.*?)" title="(.*?)">(.*?)<\/a>', 'gi');
@@ -98,7 +98,7 @@ function alerteLeBonCoin() {
           }
           
           // Ajoute le titre
-          mail += '<div style="float:left;width:420px;padding:20px 0;"><a href="' + href + '" style="font-size: 14px;font-weight:bold;color:#369;text-decoration:none;">' + title + '</a>';
+          mail += '<div style="float:left;width:auto;padding:20px 0;"><a href="' + href + '" style="font-size: 14px;font-weight:bold;color:#369;text-decoration:none;">' + title + '</a>';
           
           // Ajoute le lieu
           mail += '<div>' + placement + '</div>';
