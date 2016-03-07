@@ -1,8 +1,11 @@
+/*
+ * ChangeLog
+ * 6 Mars 2016 - Adaptation au nouveau site du Bon Coin, ainsi que quelques nettoyages
+ * 7 Mars 2016 - Format d'email plus compact
+ */
+
 var debug = false;
 
-/**
-* global var section
-*/
 var menuLabel = "Lbc Alertes";
 var menuMailSetupLabel = "Setup email";
 var menuSearchSetupLabel = "Setup recherche";
@@ -10,68 +13,95 @@ var menuSearchLabel = "Lancer manuellement";
 var menuLog = "Activer/Désactiver les logs";
 var menuArchiveLog = "Archiver les logs";
 
+var scriptProperties = PropertiesService.getScriptProperties();
+
 function lbc(sendMail){
   if(sendMail != false){
     sendMail = true;
   }
-  var to = ScriptProperties.getProperty('email');
+
+  var to = scriptProperties.getProperty('email');
   if(to == "" || to == null ){
-    Browser.msgBox("L'email du destinataire n'est pas définit. Allez dans le menu \"" + menuLabel + "\" puis \"" + menuMailSetupLabel + "\".");
+    Browser.msgBox("L'email du destinataire n'est pas défini. Allez dans le summary \"" + summaryLabel + "\" puis \"" + summaryMailSetupLabel + "\".");
   } else {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName("Données");
     var slog = ss.getSheetByName("Log");
     var i = 0; var nbSearchWithRes = 0; var nbResTot = 0;
-    var body = ""; var corps = ""; var bodyHTML = ""; var corpsHTML = ""; var menu = ""; var searchURL = ""; var searchName = "";
-    var stop = false;
-    while((searchURL = sheet.getRange(2+i,2).getValue()) != ""){
+    var body = ""; var corps = ""; var announceHTML = ""; var bodyHTML = ""; var summary = ""; var searchURL = ""; var searchName = "";
+
+    while((searchURL = sheet.getRange(2+i,2).getValue()) != "") {
+      
       searchName = sheet.getRange(2+i,1).getValue();
       Logger.log("Recherche pour " + searchName);
       var nbRes = 0;
       body = "";
-      bodyHTML = "";
-      stop = false;
+      announceHTML = "";
+
       var rep = UrlFetchApp.fetch(searchURL).getContentText("iso-8859-15");
+      
       if(rep.indexOf("Aucune annonce") < 0){
-        //LBC à des résultats
+        
         var data = splitResult_(rep);
         data = data.substring(data.indexOf("<a"));
         var firsta = extractA_(data);
+        
         if(sendMail == null || sendMail == true) {
-          var holda = sheet.getRange(2+i,3).getValue();
-          if(extractId_(firsta) != holda) {// && holda != ""){
-            while(data.indexOf("<a") > 0 || stop == false){
+          
+          var lastSavedID = sheet.getRange(2+i,3).getValue();
+          
+          //If ID of first announce is different from the one saved last time
+          if(extractId_(firsta) != lastSavedID) {
+            
+            while(data.indexOf("<a") > -1) {
+              
+              Logger.log("data = " + data);
+                
               var a = extractA_(data);
-              if(extractId_(a) != holda){
+              var announceId = extractId_(a);
+              if(announceId != lastSavedID) {
+
+                nbRes++;
+
                 var title = extractTitle_(data);
                 var place = extractPlace_(data);
                 var price = extractPrice_(data);
                 var vendpro = extractPro_(data);
                 var date = extractDate_(data);
                 var image = extractImage_(data);
-                body = body + "<li><a href=\"" + a + "\">" + title + "</a> (" + price + " euros - " + place + ")</li>";
-                bodyHTML = bodyHTML + "<li style=\"list-style:none;margin-bottom:20px; clear:both;background:#EAEBF0;border-top:1px solid #ccc;\"><div style=\"float:left;width:90px;padding: 20px 20px 0 0;text-align: right;\">"+ date +"<div style=\"float:left;width:200px;padding:20px 0;\"><a href=\"" + a + "\">"+ image +"</a> </div><div style=\"float:left;width:420px;padding:20px 0;\"><a href=\"" + a + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">" + title + vendpro +"</a> <div>" + place + "</div> <div style=\"line-height:32px;font-size:14px;font-weight:bold;\">" + price + "</div></div></li>";
-                if(data.indexOf("<a",10) > 0){
-                  var data = data.substring(data.indexOf("<a",10));
-                }else{
-                  stop = true;
-                }
-                nbRes++;
-              }else{
-                stop = true;
+
+                announceHTML += "<tr style=\"height:1px; padding-bottom:10px;\"><td style=\"border-top:1px solid #ccc;\" colspan=\"2\"></td></tr>"
+                announceHTML += "<tr><td style=\"width:200px;padding-right:20px;\"><a href=\"" + a + "\" target=\"" + announceId + "\"><img src=\""+ image +"\"></a></td>";
+                announceHTML += "<td style=\"align:left; padding-left:10px;\"><a href=\"" + a + "\" target=\"" + announceId + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">";
+                announceHTML += title + vendpro +"</a> <div>" + place + "</div><div>" + date + "</div><div style=\"font-size:14px;font-weight:bold;\">" + price + "</div>";
+                announceHTML += "</td></tr>";
+                               
+                //Skip the block already analyzed
+                var endAnnounceMarker = "</section>";
+                var endAnnounceMarkerPos = data.indexOf(endAnnounceMarker);
+                data = data.substring(endAnnounceMarkerPos+endAnnounceMarker.length);
+              }
+              else{
+                //If last saved announce is reached, we stop the analysis
+                data = "";
               }
             }
-            nbSearchWithRes++;
-            corps = corps + "<p>Votre recherche : <a name=\""+ searchName + "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p><ul>" + body + "</ul>";
-            corpsHTML = corpsHTML + "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Votre recherche : <a name=\""+ searchName + "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p><ul>" + bodyHTML + "</ul>";
-            menu += "<li><a href=\"#"+ searchName + "\">"+ searchName +" (" + nbRes + ")</a></li>"
-            if(ScriptProperties.getProperty('log') == "true" || ScriptProperties.getProperty('log') == null || ScriptProperties.getProperty('log') == ""){
+
+            if (nbRes > 0)
+               nbSearchWithRes++;
+            
+            bodyHTML += "<p style=\"display:block;clear:both;padding-top:2px;font-size:14px;font-weight:bold;background:#F1F1F5;\">Recherche <a name=\""+ searchName;
+            bodyHTML += "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p>";
+            bodyHTML += "<table border=\"0\" style=\"width:100%; vertical-align:middle; background:#FFFFFF;\"><tbody>" + announceHTML + "</tbody></table>";
+
+            summary  += "<li><a href=\"#"+ searchName + "\">"+ searchName +" (" + nbRes + ")</a></li>"
+                        
+            if(scriptProperties.getProperty('log') == "true" || scriptProperties.getProperty('log') == null || scriptProperties.getProperty('log') == ""){
               slog.insertRowBefore(2);
               slog.getRange("A2").setValue(searchName);
               slog.getRange("B2").setValue(nbRes);
               slog.getRange("C2").setValue(new Date);
             }
-            //sheet.getRange(2+i,3).setValue(extractId_(firsta));
           }
         }
         sheet.getRange(2+i,3).setValue(extractId_(firsta));
@@ -84,50 +114,29 @@ function lbc(sendMail){
     }
     
     if(nbSearchWithRes > 1) {
-      //plusieurs recherche, on créé un menu
-      menu = "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Accès rapide :</p><ul>" + menu + "</ul>";
-      //corps = menu + corps;
-      corpsHTML = menu + corpsHTML;
-      debug_(menu);
+      //plusieurs recherches, on créé un summary
+      summary = "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Accès rapide :</p><ul>" + summary + "</ul>";
+      bodyHTML = summary + bodyHTML;
+      debug_(summary);
     }
     
     debug_("Nb de res tot:" + nbResTot);
     //on envoie le mail?
-    if(corps != ""){
+    if(nbSearchWithRes > 0){
       var title = "Alerte leboncoin.fr : " + nbResTot + " nouveau" + (nbResTot>1?"x":"") + " résultat" + (nbResTot>1?"s":"");
       debug_("titre msg : " + title);
       corps = "Si cet email ne s’affiche pas correctement, veuillez sélectionner\nl’affichage HTML dans les paramètres de votre logiciel de messagerie.";
-      debug_("corps msg : " + corps);
-      corpsHTML = "<body>" + corpsHTML + "</body>";
-      debug_("corpsHTML msg : " + corpsHTML);
-      MailApp.sendEmail(to,title,corps,{ htmlBody: corpsHTML });
-      debug_("Nb mail journailier restant : " + MailApp.getRemainingDailyQuota());
-    }
-  }
-}
-
-function setup(){
-  lbc(false);
-}
-
-function setupMail(){
-  if(ScriptProperties.getProperty('email') == "" || ScriptProperties.getProperty('email') == null ){
-    var quest = Browser.inputBox("Entrez votre email, le programme ne vérifie pas le contenu de cette boite.", Browser.Buttons.OK_CANCEL);
-    if(quest == "cancel"){
-      Browser.msgBox("Ajout email annulé.");
-      return false;
-    }else{
-      ScriptProperties.setProperty('email', quest);
-      Browser.msgBox("Email " + ScriptProperties.getProperty('email') + " ajouté");
-    }
-  }else{
-    var quest = Browser.inputBox("Entrez un email pour modifier l'email : " + ScriptProperties.getProperty('email') , Browser.Buttons.OK_CANCEL);
-    if(quest == "cancel"){
-      Browser.msgBox("Modification email annulé.");
-      return false;
-    }else{
-      ScriptProperties.setProperty('email', quest);
-      Browser.msgBox("Email " + ScriptProperties.getProperty('email') + " ajouté");
+      //debug_("corps msg : " + corps);
+      bodyHTML = "<body>" + bodyHTML + "</body>";
+      debug_("bodyHTML msg : " + bodyHTML);
+      
+      if (bodyHTML.length > 200*1024) {
+        // Email body size is limited to 200 KB. Too big body is then truncated to avoid script to fail
+        bodyHTML = bodyHTML.substring(0, 200*1024-1);
+      }
+        
+      MailApp.sendEmail(to,title,corps,{ htmlBody: bodyHTML });
+      debug_("Nb mail journalier restant : " + MailApp.getRemainingDailyQuota());
     }
   }
 }
@@ -143,7 +152,14 @@ function extractId_(id){
 * Extrait le lien de l'annonce
 */
 function extractA_(data){
-  return data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
+  
+  var found = data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
+  
+  // Handle case when the URL doesn't start by http:
+  if (found.indexOf("//") == 0)
+    return "http:" + found;
+  else
+    return found;
 }
 
 /**
@@ -157,7 +173,11 @@ function extractTitle_(data){
 * Extrait vendeur pro
 */
 function extractPro_(data){
-   var pro = data.substring(data.indexOf("category") + 9 , data.indexOf("</div>", data.indexOf("category") + 9) );
+  
+  var proMarker = "<span class=\"ispro\">";
+  var proStart  = data.indexOf(proMarker);
+  var pro = data.substring(proStart + proMarker.length, data.indexOf("</span>", proStart + proMarker.length) );
+  
   if(pro.indexOf("(pro)") > 0){
     return " (pro)";
   }else{
@@ -169,65 +189,111 @@ function extractPro_(data){
 * Extrait le lieu de l'annonce
 */
 function extractPlace_(data){
-return data.substring(data.indexOf("placement") + 11 , data.indexOf("</div>", data.indexOf("placement") + 11) );
+  
+  // Look for the 2nd "item_supp" block  
+  var infoMarker = "<p class=\"item_supp\">";
+  var info1pos = data.indexOf(infoMarker);
+  var info2pos = data.indexOf(infoMarker, info1pos + infoMarker.length);
+    
+  return data.substring(info2pos + infoMarker.length, data.indexOf("</p>", info2pos) );
 }
 
 /**
 * Extrait le prix de l'annonce
 */
 function extractPrice_(data){
-// test à optimiser car c'est hyper bourrin [mlb]
-data = data.substring(0,data.indexOf("clear",10)); //racourcissement de la longueur de data pour ne pas aller chercher le prix du proudit suivant
-var isPrice = String(data.substring(data.indexOf("price"), data.indexOf("price")+250)).match(/price/gi);
-if (isPrice) {
-var price = data.substring(data.indexOf("price") + 7 , data.indexOf("</div>", data.indexOf("price") + 7) );
-} else {
-var price = "";
-}
-return price;
+
+  var priceMarker = "<h3 class=\"item_price\">";
+  var priceStart  = data.indexOf(priceMarker);
+  if (priceStart < 0)
+    return "";
+  else
+    return data.substring(priceStart + priceMarker.length, data.indexOf("</h3>", priceStart + priceMarker.length) );
 }
 
 /**
-* Extrait tla date de l'annonce
+* Extrait la date de l'annonce
 */
 function extractDate_(data){
-return data.substring(data.indexOf("date") + 6 , data.indexOf("class=\"image\"", data.indexOf("date") + 6) - 5);
+
+  // Look for the 3rd "item_supp" block  
+  var infoMarker = "<p class=\"item_supp\">";
+  var info1pos = data.indexOf(infoMarker);
+  var info2pos = data.indexOf(infoMarker, info1pos + infoMarker.length);
+  var info3pos = data.indexOf(infoMarker, info2pos + infoMarker.length);
+    
+  return data.substring(info3pos + infoMarker.length, data.indexOf("</p>", info3pos) );
 }
 
 /**
 * Extrait l'image de l'annonce
 */
 function extractImage_(data){
-// test à optimiser car c'est hyper bourrin [mlb]
-var isImage = String(data.substring(data.indexOf("image"), data.indexOf("image")+250)).match(/img/gi);
-if (isImage) {
-var image = data.substring(data.indexOf("class=\"image-and-nb\">") + 21, data.indexOf("class=\"nb\"", data.indexOf("class=\"image-and-nb\">") + 21) - 12);
-} else {
-var image = "";
-}
-return image;
+  
+  var imgStartMarker = "data-imgSrc=";
+  var imageStart = data.indexOf(imgStartMarker);
+  if (imageStart < 0) {
+    return "";
+  }
+  else {
+    
+    var imageEnd = data.indexOf("data-imgAlt=", imageStart);
+    var image = data.substring(imageStart + imgStartMarker.length + 1, imageEnd - 2);
+    image = image.replace("//","http://");
+    return image;
+  }
 }
 
 /**
 * Extrait la liste des annonces
 */
 function splitResult_(text){
-var debut = text.indexOf("<div class=\"list-lbc\">");
-var fin = text.indexOf("<div class=\"list-gallery\">");
-return text.substring(debut + "<div class=\"list-lbc\">".length,fin);
+  
+  var debut = text.indexOf("<section id=\"listingAds\"");
+  debut = text.indexOf("<li>", debut);
+  var fin = text.indexOf("<div id=\"google_ads\"");
+  return text.substring(debut,fin);
 }
 
 //Activer/Désactiver les logs
 function dolog(){
-  if(ScriptProperties.getProperty('log') == "true"){
-    ScriptProperties.setProperty('log', false);
+  if(scriptProperties.getProperty('log') == "true"){
+    scriptProperties.setProperty('log', false);
     Browser.msgBox("Les logs ont été désactivées.");
-  }else if(ScriptProperties.getProperty('log') == "false"){
-    ScriptProperties.setProperty('log', true);
+  }
+  else if(scriptProperties.getProperty('log') == "false"){
+    scriptProperties.setProperty('log', true);
     Browser.msgBox("Les logs ont été activées.");
-  }else{
-    ScriptProperties.setProperty('log', false);
+  }
+  else{
+    scriptProperties.setProperty('log', false);
     Browser.msgBox("Les logs ont été désactivées.");
+  }
+}
+
+function setup(){
+  lbc(false);
+}
+
+function setupMail(){
+  if(scriptProperties.getProperty('email') == "" || scriptProperties.getProperty('email') == null ){
+    var quest = Browser.inputBox("Entrez votre email, le programme ne vérifie pas le contenu de cette boite.", Browser.Buttons.OK_CANCEL);
+    if(quest == "cancel"){
+      Browser.msgBox("Ajout email annulé.");
+      return false;
+    }else{
+      scriptProperties.setProperty('email', quest);
+      Browser.msgBox("Email " + scriptProperties.getProperty('email') + " ajouté");
+    }
+  }else{
+    var quest = Browser.inputBox("Entrez un email pour modifier l'email : " + scriptProperties.getProperty('email') , Browser.Buttons.OK_CANCEL);
+    if(quest == "cancel"){
+      Browser.msgBox("Modification email annulé.");
+      return false;
+    }else{
+      scriptProperties.setProperty('email', quest);
+      Browser.msgBox("Email " + scriptProperties.getProperty('email') + " ajouté");
+    }
   }
 }
 
@@ -306,3 +372,5 @@ if(debug != null && debug) {
 Browser.msgBox(msg);
 }
 }
+
+
