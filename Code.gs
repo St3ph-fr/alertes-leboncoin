@@ -1,8 +1,7 @@
-var debug = false;
-
 /**
 * global var section
 */
+var debug = false;
 var menuLabel = "Lbc Alertes";
 var menuMailSetupLabel = "Setup email";
 var menuSearchSetupLabel = "Setup recherche";
@@ -10,19 +9,25 @@ var menuSearchLabel = "Lancer manuellement";
 var menuLog = "Activer/Désactiver les logs";
 var menuArchiveLog = "Archiver les logs";
 
+//Positionnement des log dans l'onglet log ? true=oui ; false=non
+ScriptProperties.setProperty('log', false);
+
+/**
+* main function
+*/
 function lbc(sendMail){
   if(sendMail != false){
     sendMail = true;
   }
   var to = ScriptProperties.getProperty('email');
   if(to == "" || to == null ){
-    Browser.msgBox("L'email du destinataire n'est pas définit. Allez dans le menu \"" + menuLabel + "\" puis \"" + menuMailSetupLabel + "\".");
+    Browser.msgBox("L'email du destinataire n'est pas défini. Allez dans le menu \"" + menuLabel + "\" puis \"" + menuMailSetupLabel + "\".");
   } else {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName("Données");
     var slog = ss.getSheetByName("Log");
     var i = 0; var nbSearchWithRes = 0; var nbResTot = 0;
-    var body = ""; var corps = ""; var bodyHTML = ""; var corpsHTML = ""; var menu = ""; var searchURL = ""; var searchName = "";
+    var body = ""; var corps = ""; var bodyHTML = ""; var corpsHTML = ""; var summary = ""; var searchURL = ""; var searchName = "";
     var stop = false;
     while((searchURL = sheet.getRange(2+i,2).getValue()) != ""){
       searchName = sheet.getRange(2+i,1).getValue();
@@ -31,30 +36,40 @@ function lbc(sendMail){
       body = "";
       bodyHTML = "";
       stop = false;
-      var rep = UrlFetchApp.fetch(searchURL).getContentText("iso-8859-15");
-      if(rep.indexOf("Aucune annonce") < 0){
-        //LBC à des résultats
-        var data = splitResult_(rep);
+      
+      var response = UrlFetchApp.fetch(searchURL).getContentText("iso-8859-15");
+      if(response.indexOf("Aucune annonce") < 0){  
+        //l'url répond un contenu
+        var data = extractAdsList_(response);
+        data = data.replace(/<aside class=/gi, "<bside class=");
+        debug_("data1 : " + data);
         data = data.substring(data.indexOf("<a"));
+        debug_("data2 : " + data);
         var firsta = extractA_(data);
+        
         if(sendMail == null || sendMail == true) {
           var holda = sheet.getRange(2+i,3).getValue();
-          if(extractId_(firsta) != holda) {// && holda != ""){
+          //est-ce que l'annonce est identique à la dernière retournée au précédent lancement du script ?
+          if(extractId_(firsta) > holda) {// && holda != ""){  //if(extractId_(firsta) != holda) {// && holda != ""){
             while(data.indexOf("<a") > 0 || stop == false){
-              var a = extractA_(data);
-              if(extractId_(a) != holda){
+              var url = extractA_(data);
+              if(extractId_(url) != holda){//if(extractId_(a) > holda){
                 var title = extractTitle_(data);
+                var img = extractImage_(data);
                 var place = extractPlace_(data);
-                var price = extractPrice_(data);
-                var vendpro = extractPro_(data);
                 var date = extractDate_(data);
-                var image = extractImage_(data);
-                body = body + "<li><a href=\"" + a + "\">" + title + "</a> (" + price + " euros - " + place + ")</li>";
-                bodyHTML = bodyHTML + "<li style=\"list-style:none;margin-bottom:20px; clear:both;background:#EAEBF0;border-top:1px solid #ccc;\"><div style=\"float:left;width:90px;padding: 20px 20px 0 0;text-align: right;\">"+ date +"<div style=\"float:left;width:200px;padding:20px 0;\"><a href=\"" + a + "\">"+ image +"</a> </div><div style=\"float:left;width:420px;padding:20px 0;\"><a href=\"" + a + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">" + title + vendpro +"</a> <div>" + place + "</div> <div style=\"line-height:32px;font-size:14px;font-weight:bold;\">" + price + "</div></div></li>";
+                var placeAndDate = place + " / " + date;
+                var price = extractPrice_(data);
+                var seller = extractSeller_(data);
+                body = body + "<li><a href=\"" + url + "\">" + title + "</a> (" + price + " euros - " + place + ")</li>";
+                bodyHTML = bodyHTML + "<li style=\"list-style:none;margin-bottom:20px;clear:both;background:#EAEBF0;border-top:1px solid #ccc;\"><div style=\"width:400px;padding:10px 0;\"><a href=\"" + url + "\"><img src=\""+ img +"\"/></a><div style=\"float:left;width:400px;padding:10px 0;\"><a href=\"" + url + "\" style=\"font-size:14px;font-weight:bold;color:#369;text-decoration:none;\">" + title + seller +"</a><div>" + placeAndDate +"</div><div style=\"line-height:18px;font-size:14px;font-weight:bold;\">" + price + "</div></div></li>";
                 if(data.indexOf("<a",10) > 0){
+                  debug_("data3 : " + data);
                   var data = data.substring(data.indexOf("<a",10));
+                  debug_("data4 : " + data);
                 }else{
                   stop = true;
+                  debug_("stop : " + stop);
                 }
                 nbRes++;
               }else{
@@ -64,7 +79,7 @@ function lbc(sendMail){
             nbSearchWithRes++;
             corps = corps + "<p>Votre recherche : <a name=\""+ searchName + "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p><ul>" + body + "</ul>";
             corpsHTML = corpsHTML + "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Votre recherche : <a name=\""+ searchName + "\" href=\""+ searchURL + "\"> "+ searchName +" (" + nbRes + ")</a></p><ul>" + bodyHTML + "</ul>";
-            menu += "<li><a href=\"#"+ searchName + "\">"+ searchName +" (" + nbRes + ")</a></li>"
+            summary += "<li><a href=\"#"+ searchName + "\">"+ searchName +" (" + nbRes + ")</a></li>"
             if(ScriptProperties.getProperty('log') == "true" || ScriptProperties.getProperty('log') == null || ScriptProperties.getProperty('log') == ""){
               slog.insertRowBefore(2);
               slog.getRange("A2").setValue(searchName);
@@ -77,39 +92,153 @@ function lbc(sendMail){
         sheet.getRange(2+i,3).setValue(extractId_(firsta));
         nbResTot += nbRes;
       } else {
-        //pas de résultat
+        //l'url retourne "aucune annonce" => il n'y pas de résultat => on set une value quelconque dans la sheet de suivi
         sheet.getRange(2+i,3).setValue(123);
       }
+      //on passe à la recherche suivante
       i++;
     }
+    debug_("Nb Search with result:" + nbSearchWithRes)
+    debug_("Nb result tot:" + nbResTot);
     
+    //fin des recherches, assemblage du mail
     if(nbSearchWithRes > 1) {
-      //plusieurs recherche, on créé un menu
-      menu = "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Accès rapide :</p><ul>" + menu + "</ul>";
-      //corps = menu + corps;
-      corpsHTML = menu + corpsHTML;
-      debug_(menu);
+      //plusieurs recherches retourne des résultats => création d'un sommaire
+      summary = "<p style=\"display:block;clear:both;padding-top:20px;font-size:14px;\">Accès rapide :</p><ul>" + summary + "</ul>";
+      debug_(summary);
+      //corps = summary + corps;
+      corpsHTML = summary + corpsHTML;
     }
-    
-    debug_("Nb de res tot:" + nbResTot);
-    //on envoie le mail?
     if(corps != ""){
-      var title = "Alerte leboncoin.fr : " + nbResTot + " nouveau" + (nbResTot>1?"x":"") + " résultat" + (nbResTot>1?"s":"");
+      var title = "Alertes leboncoin.fr : " + nbResTot + " nouveau" + (nbResTot>1?"x":"") + " résultat" + (nbResTot>1?"s":"");
       debug_("titre msg : " + title);
       corps = "Si cet email ne s’affiche pas correctement, veuillez sélectionner\nl’affichage HTML dans les paramètres de votre logiciel de messagerie.";
       debug_("corps msg : " + corps);
       corpsHTML = "<body>" + corpsHTML + "</body>";
       debug_("corpsHTML msg : " + corpsHTML);
       MailApp.sendEmail(to,title,corps,{ htmlBody: corpsHTML });
-      debug_("Nb mail journailier restant : " + MailApp.getRemainingDailyQuota());
+      debug_("Nb mail journalier restant : " + MailApp.getRemainingDailyQuota());
     }
   }
+}
+
+/**
+* Extrait ID de l'annonce
+*/
+function extractId_(id){
+  var extractAdsId = id.substring(id.indexOf("/",25) + 1,id.indexOf(".htm"));
+  debug_("extractAdsId : " + extractAdsId);
+  return extractAdsId;
+}
+
+/**
+* Extrait URL de l'annonce
+*/
+function extractA_(data){
+  var extractAdsUrl = data.substring(data.indexOf("<a href=\"") + 9 , data.indexOf(".htm", data.indexOf("<a href=\"") + 9) + 4);
+  extractAdsUrl = extractAdsUrl.replace("//","http://");
+  debug_("extractAdsUrl : " + extractAdsUrl);
+  return extractAdsUrl;
+}
+
+/**
+* Extrait Titre de l'annonce
+*/
+function extractTitle_(data){
+  var extractAdsTitle = data.substring(data.indexOf("title=") + 7 , data.indexOf("\"", data.indexOf("title=") + 7));
+  debug_("extractAdsTitle : " + extractAdsTitle);
+  return extractAdsTitle;
+}
+
+/**
+* Extrait Type de vendeur (pro/part)
+*/
+function extractSeller_(data){
+  var extractTypeSeller = data.substring(data.indexOf("\"ad_offres\" : \"") + 15 , data.indexOf("\"", data.indexOf("\"ad_offres\" : \"") + 15));
+  debug_("extractTypeSeller : " + extractTypeSeller);
+  if (extractTypeSeller.indexOf("part") == -1) {
+    extractTypeSeller = " (" + extractTypeSeller + ")"
+    return extractTypeSeller;
+  }
+  return "";
+}
+
+/**
+* Extrait Lieu de l'annonce
+*/
+function extractPlace_(data){
+  //Raccourcissement de la longueur de "data" pour faciliter l'extraction du lieu
+  data = data.substring(data.indexOf("</p>") + 4 , data.indexOf("</aside>", data.indexOf("</p>") + 4));
+  var extractAdsPlace = data.substring(data.indexOf("item_supp\">") + 11 , data.indexOf("</p>", data.indexOf("item_supp\">") + 11));
+  debug_("extractAdsPlace : " + extractAdsPlace);
+  return extractAdsPlace;
+}
+
+/**
+* Extrait Prix de l'annonce
+*/
+function extractPrice_(data){
+  //Raccourcissement de la longueur de "data" pour conserver 1 seule annonce et faciliter l'extraction du prix
+  data = data.substring(data.indexOf("item_imagePic") + 13 , data.indexOf("</aside>", data.indexOf("item_imagePic") + 13));
+  //Est-ce qu'il y a un prix sur l'annonce ?
+  if (data.indexOf("item_price\">") > -1) {
+    var extractAdsPrice = data.substring(data.indexOf("item_price\">") + 12 , data.indexOf("</h3>", data.indexOf("item_price\">") + 12));
+    debug_("extractAdsPrice : " + extractAdsPrice);
+    return extractAdsPrice;
+  }
+  return "";
+}
+
+/**
+* Extrait Date de l'annonce
+*/
+function extractDate_(data){
+  //Raccourcissement de la longueur de "data" pour faciliter l'extraction de la date
+  data = data.substring(data.indexOf("item_absolute\">") + 15 , data.indexOf("</aside>", data.indexOf("item_absolute\">") + 15));
+  var extractAdsDate = data.substring(data.indexOf("item_supp\">") + 12 , data.indexOf("</p>", data.indexOf("item_supp\">") + 12));
+  extractAdsDate = extractAdsDate.replace("," , " / ");
+  debug_("extractAdsDate : " + extractAdsDate);
+  return extractAdsDate;
+}
+
+/**
+* Extrait Image de l'annonce
+*/
+function extractImage_(data){
+  //Raccourcissement de la longueur de "data" pour conserver 1 seule annonce et faciliter l'extraction de l'image
+  data = data.substring(data.indexOf("item_imagePic") + 13 , data.indexOf("</aside>", data.indexOf("item_imagePic") + 13));
+  //Est-ce qu'il y a une image sur cette annonce ?
+  if (data.indexOf("no-picture.png") == -1) {
+    var extractAdsImg = data.substring(data.indexOf("data-imgSrc=\"") + 13, data.indexOf("\"", data.indexOf("data-imgSrc=\"") + 13));
+    //debug_("extractAdsImg : " + extractAdsImg);
+    extractAdsImg = extractAdsImg.replace("//","http://");
+    debug_("extractAdsImg : " + extractAdsImg);
+    return extractAdsImg;
+  }
+  debug_("Pas d'image sur l'annonce");
+  return "";
+}
+
+/**
+* Extrait la liste des annonces
+*/
+function extractAdsList_(text){
+var debut = text.indexOf("<ul class=\"tabsContent dontSwitch block-white\">");
+  debug_("position debut liste des annonces : " + debut);
+
+var fin = text.indexOf("<!-- Check the utility of this part -->");
+  debug_("position fin liste des annonces : " + fin);
+  
+return text.substring(debut + "<ul class=\"tabsContent dontSwitch block-white\">".length,fin);
 }
 
 function setup(){
   lbc(false);
 }
 
+/**
+* Definition du mail du destinataire
+*/
 function setupMail(){
   if(ScriptProperties.getProperty('email') == "" || ScriptProperties.getProperty('email') == null ){
     var quest = Browser.inputBox("Entrez votre email, le programme ne vérifie pas le contenu de cette boite.", Browser.Buttons.OK_CANCEL);
@@ -133,91 +262,8 @@ function setupMail(){
 }
 
 /**
-* Extrait l'id de l'annonce LBC
+* Activer/Désactiver les logs
 */
-function extractId_(id){
-  return id.substring(id.indexOf("/",25) + 1,id.indexOf(".htm"));
-}
-
-/**
-* Extrait le lien de l'annonce
-*/
-function extractA_(data){
-  return data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
-}
-
-/**
-* Extrait le titre de l'annonce
-*/
-function extractTitle_(data){
-  return data.substring(data.indexOf("title=") + 7 , data.indexOf("\"", data.indexOf("title=") + 7) );
-}
-
-/**
-* Extrait vendeur pro
-*/
-function extractPro_(data){
-   var pro = data.substring(data.indexOf("category") + 9 , data.indexOf("</div>", data.indexOf("category") + 9) );
-  if(pro.indexOf("(pro)") > 0){
-    return " (pro)";
-  }else{
-    return "";
-  }
-}
-
-/**
-* Extrait le lieu de l'annonce
-*/
-function extractPlace_(data){
-return data.substring(data.indexOf("placement") + 11 , data.indexOf("</div>", data.indexOf("placement") + 11) );
-}
-
-/**
-* Extrait le prix de l'annonce
-*/
-function extractPrice_(data){
-// test à optimiser car c'est hyper bourrin [mlb]
-data = data.substring(0,data.indexOf("clear",10)); //racourcissement de la longueur de data pour ne pas aller chercher le prix du proudit suivant
-var isPrice = String(data.substring(data.indexOf("price"), data.indexOf("price")+250)).match(/price/gi);
-if (isPrice) {
-var price = data.substring(data.indexOf("price") + 7 , data.indexOf("</div>", data.indexOf("price") + 7) );
-} else {
-var price = "";
-}
-return price;
-}
-
-/**
-* Extrait tla date de l'annonce
-*/
-function extractDate_(data){
-return data.substring(data.indexOf("date") + 6 , data.indexOf("class=\"image\"", data.indexOf("date") + 6) - 5);
-}
-
-/**
-* Extrait l'image de l'annonce
-*/
-function extractImage_(data){
-// test à optimiser car c'est hyper bourrin [mlb]
-var isImage = String(data.substring(data.indexOf("image"), data.indexOf("image")+250)).match(/img/gi);
-if (isImage) {
-var image = data.substring(data.indexOf("class=\"image-and-nb\">") + 21, data.indexOf("class=\"nb\"", data.indexOf("class=\"image-and-nb\">") + 21) - 12);
-} else {
-var image = "";
-}
-return image;
-}
-
-/**
-* Extrait la liste des annonces
-*/
-function splitResult_(text){
-var debut = text.indexOf("<div class=\"list-lbc\">");
-var fin = text.indexOf("<div class=\"list-gallery\">");
-return text.substring(debut + "<div class=\"list-lbc\">".length,fin);
-}
-
-//Activer/Désactiver les logs
 function dolog(){
   if(ScriptProperties.getProperty('log') == "true"){
     ScriptProperties.setProperty('log', false);
@@ -231,7 +277,9 @@ function dolog(){
   }
 }
 
-//Archiver les logs
+/**
+* Archiver les logs
+*/
 function archivelog(){
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var slog = ss.getSheetByName("Log");
@@ -245,7 +293,9 @@ function archivelog(){
   newsheet.getRange(1,1,2,3).setBorder(true,true,true,true,true,true);
 }
 
-
+/**
+* Fonction surOuverture de la feuille => ajout des menus lbc
+*/
 function onOpen() {
 var sheet = SpreadsheetApp.getActiveSpreadsheet();
 var entries = [{
