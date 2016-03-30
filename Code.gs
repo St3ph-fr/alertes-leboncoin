@@ -2,6 +2,8 @@
  * ChangeLog
  * 6 Mars 2016 - Adaptation au nouveau site du Bon Coin, ainsi que quelques nettoyages
  * 7 Mars 2016 - Format d'email plus compact
+ * 21 Mars 2016 - Correction message d'erreur si email destinataire non défini
+ * 30 Mars 2016 - Identifie si la photo est manquante dans l'annonce, itération plus propre dans les annonces
  */
 
 var debug = false;
@@ -22,7 +24,7 @@ function lbc(sendMail){
 
   var to = scriptProperties.getProperty('email');
   if(to == "" || to == null ){
-    Browser.msgBox("L'email du destinataire n'est pas défini. Allez dans le summary \"" + summaryLabel + "\" puis \"" + summaryMailSetupLabel + "\".");
+    Browser.msgBox("L'email du destinataire n'est pas défini. Allez dans le menu \"" + menuLabel + "\" puis \"" + menuMailSetupLabel + "\".");
   } else {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName("Données");
@@ -40,52 +42,57 @@ function lbc(sendMail){
 
       var rep = UrlFetchApp.fetch(searchURL).getContentText("iso-8859-15");
       
-      if(rep.indexOf("Aucune annonce") < 0){
+      if(rep.indexOf("Aucune annonce") < 0) {
         
         var data = splitResult_(rep);
         data = data.substring(data.indexOf("<a"));
-        var firsta = extractA_(data);
         
         if(sendMail == null || sendMail == true) {
           
           var lastSavedID = sheet.getRange(2+i,3).getValue();
           
-          //If ID of first announce is different from the one saved last time
-          if(extractId_(firsta) != lastSavedID) {
+          var announceURL = extractA_(data);
+          var firstID     = extractId_(announceURL);
+          
+          if (firstID != lastSavedID) {
             
-            while(data.indexOf("<a") > -1) {
+            var announceId  = firstID;
+          
+            //While ID of announce is different from the saved one
+            do {
               
               Logger.log("data = " + data);
+
+              var endAnnounceMarker = "</section>";
+              var endAnnounceMarkerPos = data.indexOf(endAnnounceMarker);
                 
-              var a = extractA_(data);
-              var announceId = extractId_(a);
-              if(announceId != lastSavedID) {
+              if (endAnnounceMarkerPos > 0) {
 
                 nbRes++;
-
+                
                 var title = extractTitle_(data);
                 var place = extractPlace_(data);
                 var price = extractPrice_(data);
                 var vendpro = extractPro_(data);
                 var date = extractDate_(data);
-                var image = extractImage_(data);
+                var image = extractImage_(data, endAnnounceMarkerPos);
 
                 announceHTML += "<tr style=\"height:1px; padding-bottom:10px;\"><td style=\"border-top:1px solid #ccc;\" colspan=\"2\"></td></tr>"
-                announceHTML += "<tr><td style=\"width:200px;padding-right:20px;\"><a href=\"" + a + "\" target=\"" + announceId + "\"><img src=\""+ image +"\"></a></td>";
-                announceHTML += "<td style=\"align:left; padding-left:10px;\"><a href=\"" + a + "\" target=\"" + announceId + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">";
+                announceHTML += "<tr><td style=\"width:200px;padding-right:20px;\"><a href=\"" + announceURL + "\" target=\"" + announceId + "\"><img src=\""+ image +"\"></a></td>";
+                announceHTML += "<td style=\"align:left; padding-left:10px;\"><a href=\"" + announceURL + "\" target=\"" + announceId + "\" style=\"font-size: 14px;font-weight:bold;color:#369;text-decoration:none;\">";
                 announceHTML += title + vendpro +"</a> <div>" + place + "</div><div>" + date + "</div><div style=\"font-size:14px;font-weight:bold;\">" + price + "</div>";
                 announceHTML += "</td></tr>";
                                
                 //Skip the block already analyzed
-                var endAnnounceMarker = "</section>";
-                var endAnnounceMarkerPos = data.indexOf(endAnnounceMarker);
                 data = data.substring(endAnnounceMarkerPos+endAnnounceMarker.length);
+                
+                announceURL = extractA_(data);
+                announceId  = extractId_(announceURL);
               }
-              else{
-                //If last saved announce is reached, we stop the analysis
-                data = "";
-              }
-            }
+              else
+                announceId = "";
+              
+            } while ((announceId != "") && (announceId != lastSavedID))
 
             if (nbRes > 0)
                nbSearchWithRes++;
@@ -104,7 +111,7 @@ function lbc(sendMail){
             }
           }
         }
-        sheet.getRange(2+i,3).setValue(extractId_(firsta));
+        sheet.getRange(2+i,3).setValue(firstID);
         nbResTot += nbRes;
       } else {
         //pas de résultat
@@ -144,8 +151,14 @@ function lbc(sendMail){
 /**
 * Extrait l'id de l'annonce LBC
 */
-function extractId_(id){
-  return id.substring(id.indexOf("/",25) + 1,id.indexOf(".htm"));
+function extractId_(data){
+  
+  var lastSlashPos = data.lastIndexOf("/");
+  
+  if (lastSlashPos < 0)
+    return ""
+  else
+    return data.substring(lastSlashPos + 1,data.indexOf(".htm", lastSlashPos));
 }
 
 /**
@@ -153,7 +166,11 @@ function extractId_(id){
 */
 function extractA_(data){
   
-  var found = data.substring(data.indexOf("<a") + 9 , data.indexOf(".htm", data.indexOf("<a") + 9) + 4);
+  var aPos = data.indexOf("<a");
+  if (aPos < 0)
+    return "";
+  
+  var found = data.substring(aPos + 9 , data.indexOf(".htm", aPos + 9) + 4);
   
   // Handle case when the URL doesn't start by http:
   if (found.indexOf("//") == 0)
@@ -228,11 +245,11 @@ function extractDate_(data){
 /**
 * Extrait l'image de l'annonce
 */
-function extractImage_(data){
+function extractImage_(data, endAnnounceMarkerPos){
   
   var imgStartMarker = "data-imgSrc=";
   var imageStart = data.indexOf(imgStartMarker);
-  if (imageStart < 0) {
+  if ((imageStart < 0) || (imageStart > endAnnounceMarkerPos)) {
     return "";
   }
   else {
@@ -372,5 +389,4 @@ if(debug != null && debug) {
 Browser.msgBox(msg);
 }
 }
-
 
