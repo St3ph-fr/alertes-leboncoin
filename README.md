@@ -2,14 +2,15 @@ Alertes leboncoin
 ====================
 
 Script d'alertes email leboncoin.fr via Google Docs
+Fork du projet de St3ph-fr
 
-Créé par Just docs it : http://justdocsit.blogspot.fr/2012/07/creer-une-alerte-sur-le-bon-coin.html
-La version : http://justdocsit.blogspot.com/2012/11/alerte-leboncoin-v2.html
+Pour créer rapidement votre feuille de recherche: https://goo.gl/1daGn2
 
 Pour suivre les évolutions abonnez vous à la page google plus d'alerte lbc : https://plus.google.com/u/0/b/116856005769817085204/116856005769817085204/posts
 
 Modifications apportées par cette version :
-- support de la date 
-- support des images
-- style css de l'email
-
+ * 6 Mars 2016 - Adaptation au nouveau site du Bon Coin, ainsi que quelques nettoyages
+ * 7 Mars 2016 - Format d'email plus compact
+ * 21 Mars 2016 - Correction message d'erreur si email destinataire non défini
+ * 30 Mars 2016 - Identifie si la photo est manquante dans l'annonce, itération plus propre dans les annonces
+ * 31 Mars 2016 - Correction regression dans le case de "Setup Recherche"
