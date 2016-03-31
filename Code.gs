@@ -4,6 +4,7 @@
  * 7 Mars 2016 - Format d'email plus compact
  * 21 Mars 2016 - Correction message d'erreur si email destinataire non défini
  * 30 Mars 2016 - Identifie si la photo est manquante dans l'annonce, itération plus propre dans les annonces
+ * 31 Mars 2016 - Correction regression dans le case de "Setup Recherche"
  */
 
 var debug = false;
@@ -47,16 +48,16 @@ function lbc(sendMail){
         var data = splitResult_(rep);
         data = data.substring(data.indexOf("<a"));
         
+        var announceURL = extractA_(data);
+        var firstID     = extractId_(announceURL);
+        
         if(sendMail == null || sendMail == true) {
           
           var lastSavedID = sheet.getRange(2+i,3).getValue();
           
-          var announceURL = extractA_(data);
-          var firstID     = extractId_(announceURL);
-          
           if (firstID != lastSavedID) {
             
-            var announceId  = firstID;
+            var announceId = firstID;
           
             //While ID of announce is different from the saved one
             do {
