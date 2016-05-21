@@ -14,4 +14,4 @@ Modifications apportées par cette version :
  * 21 Mars 2016 - Correction message d'erreur si email destinataire non défini
  * 30 Mars 2016 - Identifie si la photo est manquante dans l'annonce, itération plus propre dans les annonces
  * 31 Mars 2016 - Correction regression dans le case de "Setup Recherche"
- * 20 mai 2016 - Modifs proposées par Franck : ajout de l'heure dans le log + ajout de l'image "https://www.leboncoin.fr/img/no-picture-adview.png" lorsque l'annonce n'a pas de photo + ajout de la fonction purgeLog, qui permet de supprimer des lignes dans le log au dela du seuil défini par l'utilisateur
+ * 20 Mai 2016 - Modifs proposées par Franck : ajout de l'heure dans le log + ajout de l'image "https://www.leboncoin.fr/img/no-picture-adview.png" lorsque l'annonce n'a pas de photo + ajout de la fonction purgeLog, qui permet de supprimer des lignes dans le log au dela du seuil défini par l'utilisateur
