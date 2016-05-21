@@ -1,10 +1,11 @@
-/*
+   /*
  * ChangeLog
  * 6 Mars 2016 - Adaptation au nouveau site du Bon Coin, ainsi que quelques nettoyages
  * 7 Mars 2016 - Format d'email plus compact
  * 21 Mars 2016 - Correction message d'erreur si email destinataire non défini
  * 30 Mars 2016 - Identifie si la photo est manquante dans l'annonce, itération plus propre dans les annonces
  * 31 Mars 2016 - Correction regression dans le case de "Setup Recherche"
+ * 20 mai 2016 - Modifs proposées par Franck : ajout de l'heure dans le log (à partir de ligne 112) + ajout de l'image "https://www.leboncoin.fr/img/no-picture-adview.png" lorsque l'annonce n'a pas de photo (ligne 257) + ajout de la fonction purgeLog, qui permet de supprimer des lignes dans le log au dela du seuil défini par l'utilisateur
  */
 
 var debug = false;
@@ -15,6 +16,8 @@ var menuSearchSetupLabel = "Setup recherche";
 var menuSearchLabel = "Lancer manuellement";
 var menuLog = "Activer/Désactiver les logs";
 var menuArchiveLog = "Archiver les logs";
+var menuPurgeLog = "Purger le log";
+var menuNumberOfRowsToKeepInLog = "Nombre de lignes à conserver dans le log lors d'une purge";
 
 var scriptProperties = PropertiesService.getScriptProperties();
 
@@ -28,7 +31,7 @@ function lbc(sendMail){
     Browser.msgBox("L'email du destinataire n'est pas défini. Allez dans le menu \"" + menuLabel + "\" puis \"" + menuMailSetupLabel + "\".");
   } else {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Données");
+    var sheet = ss.getSheetByName("Recherches");
     var slog = ss.getSheetByName("Log");
     var i = 0; var nbSearchWithRes = 0; var nbResTot = 0;
     var body = ""; var corps = ""; var announceHTML = ""; var bodyHTML = ""; var summary = ""; var searchURL = ""; var searchName = "";
@@ -108,7 +111,9 @@ function lbc(sendMail){
               slog.insertRowBefore(2);
               slog.getRange("A2").setValue(searchName);
               slog.getRange("B2").setValue(nbRes);
-              slog.getRange("C2").setValue(new Date);
+              var currentDate = new Date();
+              slog.getRange("C2").setValue(currentDate.getDate() + "/" + currentDate.getMonth() + "/" + currentDate.getYear() + " - " + currentDate.toLocaleTimeString().replace(" CEST",""));
+              //slog.getRange("C2").setValue(new Date);
             }
           }
         }
@@ -251,7 +256,7 @@ function extractImage_(data, endAnnounceMarkerPos){
   var imgStartMarker = "data-imgSrc=";
   var imageStart = data.indexOf(imgStartMarker);
   if ((imageStart < 0) || (imageStart > endAnnounceMarkerPos)) {
-    return "";
+    return "https://www.leboncoin.fr/img/no-picture-adview.png";
   }
   else {
     
@@ -329,6 +334,53 @@ function archivelog(){
   newsheet.getRange(1,1,2,3).setBorder(true,true,true,true,true,true);
 }
 
+function setupNumberOfRowsToKeepInLog()
+{
+  if(ScriptProperties.getProperty('NumberOfRowsToKeepInLog') == "" || ScriptProperties.getProperty('NumberOfRowsToKeepInLog') == null ){
+    var quest = Browser.inputBox("Indiquez le nombre de lignes à conserver dans le log lors d'une purge : ", Browser.Buttons.OK_CANCEL);
+    if(quest == "cancel"){
+      Browser.msgBox("Paramétrage du nombre de lignes à conserver dans le log annulé, valeur inchangée (= " + ScriptProperties.getProperty('NumberOfRowsToKeepInLog') + ")");
+      return false;
+    }else if(isNaN(quest)){
+      Browser.msgBox("Vous devez entrer une valeur numérique entière");
+      setupNumberOfRowsToKeepInLog()
+    }else{
+      if(quest == 0){quest = 1;} else if(quest != "") {quest++;} else {quest = null;} //On préserve la première ligne contenant les entêtes de colone
+      ScriptProperties.setProperty('NumberOfRowsToKeepInLog', quest);
+      Browser.msgBox("Nombre de lignes à conserver dans le fichier de log lors d'une purge paramétré à : " + ScriptProperties.getProperty('NumberOfRowsToKeepInLog') + " (Notez que la première ligne contenant les entêtes de colone sera conservée)");
+      return true;
+    }
+  }else{
+    var quest = Browser.inputBox("Indiquez le nombre de lignes à conserver dans le log lors d'une purge : (valeur actuelle = ", + ScriptProperties.getProperty('NumberOfRowsToKeepInLog') + ")" , Browser.Buttons.OK_CANCEL);
+    if(quest == "cancel"){
+      Browser.msgBox("Paramétrage du nombre de lignes à conserver dans le log annulé, valeur inchangée (= " + ScriptProperties.getProperty('NumberOfRowsToKeepInLog') + ")");
+      return false;
+    }else if(isNaN(quest)){
+      Browser.msgBox("Vous devez entrer une valeur numérique entière");
+       setupNumberOfRowsToKeepInLog()
+    }else{
+      if(quest == 0){quest = 1;} else if(quest != "") {quest++;} else {quest = null;} //On préserve la première ligne contenant les entêtes de colone
+      ScriptProperties.setProperty('NumberOfRowsToKeepInLog', quest);
+      Browser.msgBox("Nombre de lignes à conserver dans le fichier de log lors d'une purge paramétré à : " + ScriptProperties.getProperty('NumberOfRowsToKeepInLog') + " (Notez que la première ligne contenant les entêtes de colone sera conservée)");
+      return true;
+    }
+  }
+}
+
+function purgeLog()
+{
+  if(ScriptProperties.getProperty('NumberOfRowsToKeepInLog') == "" || ScriptProperties.getProperty('NumberOfRowsToKeepInLog') == null ){
+    if (setupNumberOfRowsToKeepInLog() == false){Browser.msgBox("Purge annulée, le nombre de lignes à conserver dans le log n'est pas paramétré");}
+  }
+  if(ScriptProperties.getProperty('NumberOfRowsToKeepInLog') != "" && ScriptProperties.getProperty('NumberOfRowsToKeepInLog') != null ){
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Log");
+    var howmany = sheet.getLastRow() - ScriptProperties.getProperty('NumberOfRowsToKeepInLog')
+    if(howmany > 0) {
+      sheet.deleteRows(ScriptProperties.getProperty('NumberOfRowsToKeepInLog'), howmany);
+    }
+  }
+}
 
 function onOpen() {
 var sheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -351,7 +403,14 @@ functionName : "dolog"
 },{
 name : menuArchiveLog,
 functionName : "archivelog"
-}];
+},{
+name : menuPurgeLog,
+functionName : "purgeLog"
+},{
+name : menuNumberOfRowsToKeepInLog,
+functionName : "setupNumberOfRowsToKeepInLog"
+}
+];
 sheet.addMenu(menuLabel, entries);
 }
 
@@ -390,4 +449,3 @@ if(debug != null && debug) {
 Browser.msgBox(msg);
 }
 }
-
