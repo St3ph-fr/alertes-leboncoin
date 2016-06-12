@@ -1,3 +1,6 @@
+cette version est obsolète, merci de passer sur : https://github.com/maximelebreton/alertes-leboncoin
+-------------------------------------------------
+
 Alertes leboncoin v2
 ====================
 
