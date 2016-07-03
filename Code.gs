@@ -1,4 +1,4 @@
-var alertLBCVersion = "3.7";
+var alertLBCVersion = "3.8";
 var rowSearchTitles = 1;
 var rowResTitles = 9;
 var logMaxRows = 1000;
@@ -389,7 +389,7 @@ function lbc(sendMail, throwErrorByMail)
                             
                             
                             
-                            if ( !sheetObj.getMailSentForRow(statusRowIndex) )
+                            if ( errorMsg !== ''  ||   !sheetObj.getMailSentForRow(statusRowIndex) )
                             {
                                 if (  errorMsg !== ''  ||  isNaN(price)  ||  (price >= sheetObj.getMinPrice() && (sheetObj.getMaxPrice() <= 0  ||  price <= sheetObj.getMaxPrice()))  ) // si erreur, génération systématique de l'email
                                 { 
@@ -734,6 +734,7 @@ function extractDate_(data)
             else if ( month == "mai" ) month = 4;
             else if ( month == "juin" ) month = 5;
             else if ( month == "juil" ) month = 6;
+            else if ( month == "juillet" ) month = 6;
             else if ( month == "août" ) month = 7;
             else if ( month == "sept" ) month = 8;
             else if ( month == "oct" ) month = 9;
@@ -818,34 +819,6 @@ function archivelog(){
     newsheet.getRange("C1").setValue("Date");
     newsheet.getRange(1,1,2,3).setBorder(true,true,true,true,true,true);
 }
-
-
-function onOpenLibrary() {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet();
-    var entries =
-    [
-        {
-            name : menuMailSetupLabel,
-            functionName : "AlertesLBCJV3dev.setupMail"
-        },
-        null,
-        {
-            name : menuSearchLabel,
-            functionName : "AlertesLBCJV3dev.lbc"
-        },
-        null,
-        {
-            name : menuLog,
-            functionName : "AlertesLBCJV3dev.dolog"
-        },
-        {
-            name : menuArchiveLog,
-            functionName : "AlertesLBCJV3dev.archivelog"
-        }
-    ];
-    sheet.addMenu(menuLabel, entries);
-}
-
 
 function onOpen() {
     var sheet = SpreadsheetApp.getActiveSpreadsheet();
