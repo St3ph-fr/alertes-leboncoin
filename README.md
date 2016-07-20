@@ -1,3 +1,16 @@
+A savoir : plusieurs versions du script Alertes leboncoin sont disponibles :
+---------------------------------
+
+* version maintenue par **mlb**  : https://github.com/maximelebreton/alertes-leboncoin  
+  *mise à jour semi-automatique du code, email responsive, paramètres utilisateurs, affichage d'une mini carte, mails individuels ou groupés*  
+
+* version maintenue par **jief666** : https://github.com/jief666/alertes-leboncoin  
+  *description à venir...*  
+
+* version maintenue par **jfallot** : https://github.com/jfallot/alertes-leboncoin  
+  *description à venir...*  
+
+
 Alertes leboncoin
 ====================
 
