@@ -8,7 +8,7 @@ A savoir : plusieurs versions du script Alertes leboncoin sont disponibles :
   *description à venir...*  
 
 * [Alertes leboncoin - géré par **jfallot**](https://github.com/jfallot/alertes-leboncoin) :  
-  *description à venir...*  
+  *Basée sur la version 2.x, cette version supporte les dernières évolutions du site le BonCoin et plusieurs améliorations dans les emails de résultats de recherche*  
 
 
 Alertes leboncoin
