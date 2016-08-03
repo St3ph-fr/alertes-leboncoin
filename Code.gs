@@ -1,4 +1,4 @@
-var alertLBCVersion = "3.8";
+var alertLBCVersion = "3.9";
 var rowSearchTitles = 1;
 var rowResTitles = 9;
 var logMaxRows = 1000;
@@ -736,10 +736,17 @@ function extractDate_(data)
             else if ( month == "juil" ) month = 6;
             else if ( month == "juillet" ) month = 6;
             else if ( month == "août" ) month = 7;
+            else if ( month == "ao&ucirc;t" ) month = 7;
             else if ( month == "sept" ) month = 8;
+            else if ( month == "septembre" ) month = 8;
             else if ( month == "oct" ) month = 9;
+            else if ( month == "octobre" ) month = 9;
             else if ( month == "nov" ) month = 10;
+            else if ( month == "novembre" ) month = 10;
             else if ( month == "déc" ) month = 11;
+            else if ( month == "d&eacute;c" ) month = 11;
+            else if ( month == "décembre" ) month = 11;
+            else if ( month == "d&eacute;cembre" ) month = 11;
             else {
                 throw "Erreur décodage mois. " + dayAndMonth;
             }
